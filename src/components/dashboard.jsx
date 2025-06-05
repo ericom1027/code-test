@@ -1,148 +1,98 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Form,
-  Button,
-  Badge,
-  InputGroup,
-  Collapse,
   Card,
+  Badge,
+  Button,
+  Spinner,
+  InputGroup,
 } from "react-bootstrap";
 
-const missions = [
-  {
-    id: 1,
-    name: "GPS SV05",
-    status: "upcoming",
-    time: "in a year",
-    description: "No image yet. no image yet. ",
-  },
-  {
-    id: 2,
-    name: "GTO-2",
-    status: "upcoming",
-    time: "5 hours ago",
-    description:
-      "GTO-2 mission will place a commercial communications satellite into geostationary orbit.",
-    image: "https://via.placeholder.com/400x200?text=GTO-2+Image",
-    video: "https://via.placeholder.com/400x200?text=GTO-2+Video",
-  },
-  {
-    id: 3,
-    name: "CRS-21",
-    status: "upcoming",
-    time: "1 day ago",
-    description:
-      "The 21st Commercial Resupply Services (CRS) mission for NASA delivering cargo to the ISS.",
-    image: "https://via.placeholder.com/400x200?text=CRS-21+Image",
-    video: "https://via.placeholder.com/400x200?text=CRS-21+Video",
-  },
-  {
-    id: 4,
-    name: "SXM-8",
-    status: "upcoming",
-    time: "3 days ago",
-    description:
-      "SiriusXM's SXM-8 satellite will provide satellite radio service across North America.",
-    image: "https://via.placeholder.com/400x200?text=SXM-8+Image",
-    video: "https://via.placeholder.com/400x200?text=SXM-8+Video",
-  },
-  {
-    id: 5,
-    name: "Amos-17",
-    status: "upcoming",
-    time: "2 days ago",
-    description:
-      "Amos-17 is a high-throughput satellite aimed to deliver internet connectivity across Africa.",
-    image: "https://via.placeholder.com/400x200?text=Amos-17+Image",
-    video: "https://via.placeholder.com/400x200?text=Amos-17+Video",
-  },
-  {
-    id: 6,
-    name: "Trailblazer",
-    status: "failed",
-    time: "2 years ago",
-    description:
-      "Trailblazer was lost during the launch due to stage malfunction.",
-    image: "https://via.placeholder.com/400x200?text=Trailblazer+Image",
-    video: "https://via.placeholder.com/400x200?text=Trailblazer+Video",
-  },
-  {
-    id: 7,
-    name: "DemoSat",
-    status: "failed",
-    time: "12 years ago",
-    description:
-      "Successful first stage burn and transition to second stage, maximum altitude 289 km, Premature engine shutdown at T+7 min 30's Failed to reach orbit, Failed to recover first stage.",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTm4FksxPbxta7t6cY5V6-HZQvhxMq6F3AaPA&s",
+function timeAgo(date) {
+  const now = new Date();
+  const diff = now - new Date(date);
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-    article: "https://en.wikipedia.org/wiki/DemoSat",
-    video: "https://www.youtube.com/watch?v=gZGKasWXFr0",
-  },
-  {
-    id: 8,
-    name: "FalconSat",
-    status: "failed",
-    time: "4 years ago",
-    description:
-      "FalconSat was part of a U.S. Air Force Academy project, lost due to early engine shutdown.",
-    image: "https://via.placeholder.com/400x200?text=FalconSat+Image",
-    video: "https://via.placeholder.com/400x200?text=FalconSat+Video",
-  },
-  {
-    id: 9,
-    name: "CRS-18",
-    status: "success",
-    time: "6 hours ago",
-    description:
-      "SpaceX's Commercial Resupply Services mission out of total of 20 such contracted flights for NASA...",
-    image:
-      "https://www.americaspace.com/wp-content/uploads/2019/07/CRS-18-patch.jpg",
-    video: "https://www.youtube.com/watch?v=SlgrxVuP5jk",
-  },
-  {
-    id: 10,
-    name: "CRS-19",
-    status: "upcoming",
-    time: "6 hours ago",
-    description: "",
-    image:
-      "https://www.americaspace.com/wp-content/uploads/2019/07/CRS-18-patch.jpg",
-    video: "https://www.youtube.com/watch?v=SlgrxVuP5jk",
-  },
-  {
-    id: 11,
-    name: "ANASIS-II",
-    status: "upcoming",
-    time: "8 hours ago",
-    description:
-      "ANASIS-II is South Korea's first dedicated military communications satellite.",
-    image: "https://via.placeholder.com/400x200?text=ANASIS-II+Image",
-    video: "https://via.placeholder.com/400x200?text=ANASIS-II+Video",
-  },
-  {
-    id: 12,
-    name: "CCtCap Demo Mission 2",
-    status: "upcoming",
-    time: "12 hours ago",
-    description:
-      "Crew Dragon Demo-2 is the first crewed test flight to the International Space Station.",
-    image: "https://via.placeholder.com/400x200?text=Demo-2+Image",
-    video: "https://via.placeholder.com/400x200?text=Demo-2+Video",
-  },
-];
+  if (days > 0) return days + (days === 1 ? " day ago" : " days ago");
+  if (hours > 0) return hours + (hours === 1 ? " hour ago" : " hours ago");
+  if (minutes > 0)
+    return minutes + (minutes === 1 ? " minute ago" : " minutes ago");
+  return "Just now";
+}
 
-export default function Component() {
+export default function SpaceXMissions() {
+  const [missions, setMissions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [openMissionId, setOpenMissionId] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [expanded, setExpanded] = useState({});
 
-  const handleToggle = (id) => {
-    setOpenMissionId(openMissionId === id ? null : id);
+  const pageSize = 10;
+
+  const fetchMissions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("https://api.spacexdata.com/v4/launches/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: search ? { name: { $regex: search, $options: "i" } } : {},
+          options: {
+            page,
+            limit: pageSize,
+            sort: { date_utc: "desc" },
+          },
+        }),
+      });
+      const data = await res.json();
+
+      if (page === 1) {
+        setMissions(data.docs);
+        setExpanded({});
+      } else {
+        setMissions((prev) => [...prev, ...data.docs]);
+      }
+      setHasMore(data.docs.length === pageSize);
+    } catch (error) {
+      console.error(error);
+    }
+    setLoading(false);
+  }, [page, search]);
+
+  useEffect(() => {
+    fetchMissions();
+  }, [fetchMissions]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (!hasMore || loading) return;
+
+    const handleScroll = () => {
+      if (
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 100
+      ) {
+        setPage((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [hasMore, loading]);
+
+  const toggleExpanded = (id) => {
+    setExpanded((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
   };
-
-  const filteredMissions = missions.filter((mission) =>
-    mission.name.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <div className="container mt-4" style={{ maxWidth: "700px" }}>
@@ -154,90 +104,110 @@ export default function Component() {
         />
       </InputGroup>
 
-      {filteredMissions.map((mission) => (
+      {missions.map((mission) => (
         <Card key={mission.id} className="mb-3 shadow-sm">
-          <Card.Body className="d-flex justify-content-between align-items-center">
-            <div className="d-flex align-items-center gap-3">
-              <h5 className="mb-0">{mission.name}</h5>
+          <Card.Body>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <h5>{mission.name}</h5>
               <Badge
+                pill
                 bg={
-                  mission.status === "success"
+                  mission.success === true
                     ? "success"
-                    : mission.status === "failed"
+                    : mission.success === false
                     ? "danger"
                     : "info"
                 }
-                pill
               >
-                {mission.status}
+                {mission.success === true
+                  ? "Success"
+                  : mission.success === false
+                  ? "Failed"
+                  : "Upcoming"}
               </Badge>
             </div>
-          </Card.Body>
 
-          <Collapse in={openMissionId === mission.id}>
-            <div className="p-3 border-top">
-              <div className="d-flex justify-content-start align-items-center gap-3 mb-2">
-                <span className="text-muted small">{mission.time}</span>
+            {!expanded[mission.id] && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => toggleExpanded(mission.id)}
+              >
+                View
+              </Button>
+            )}
 
-                {mission.article && (
-                  <a
-                    href={mission.article}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="small"
-                    style={{ color: "blue", textDecoration: "underline" }}
-                  >
-                    Article
-                  </a>
-                )}
+            {expanded[mission.id] && (
+              <>
+                <p className="mb-2">{timeAgo(mission.date_utc)}</p>
 
-                {mission.video && (
-                  <a
-                    href={mission.video}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="small"
-                    style={{ color: "blue", textDecoration: "underline" }}
-                  >
-                    Video
-                  </a>
-                )}
-              </div>
+                <div className="d-flex mb-3" style={{ gap: "15px" }}>
+                  {mission.links?.article && (
+                    <a
+                      href={mission.links.article}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ textDecoration: "underline", color: "#0d6efd" }}
+                    >
+                      Article
+                    </a>
+                  )}
+                  {mission.links?.webcast && (
+                    <a
+                      href={mission.links.webcast}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ textDecoration: "underline", color: "#0d6efd" }}
+                    >
+                      Video
+                    </a>
+                  )}
+                </div>
 
-              <div className="d-flex gap-3 mb-3">
-                {mission.image && (
+                <div className="d-flex">
                   <img
-                    src={mission.image}
-                    alt={`${mission.name} mission`}
+                    src={
+                      mission.links?.patch?.small ||
+                      "https://via.placeholder.com/100?text=No+Image"
+                    }
+                    alt={mission.name}
                     style={{
-                      width: "150px",
+                      width: "100px",
                       height: "auto",
-                      objectFit: "contain",
-                      flexShrink: 0,
+                      marginRight: "15px",
                     }}
                   />
-                )}
-                <p className="mb-0">{mission.description}</p>
-              </div>
-            </div>
-          </Collapse>
+                  <div>
+                    <p>{mission.details || "No description available."}</p>
+                  </div>
+                </div>
 
-          <div className="d-flex justify-content-start px-3 pb-3">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => handleToggle(mission.id)}
-            >
-              {openMissionId === mission.id ? "HIDE" : "VIEW"}
-            </Button>
-          </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => toggleExpanded(mission.id)}
+                >
+                  Hide
+                </Button>
+              </>
+            )}
+          </Card.Body>
         </Card>
       ))}
 
-      {filteredMissions.length === 0 ? (
+      {loading && (
+        <div className="text-center my-4">
+          <Spinner animation="border" />
+        </div>
+      )}
+
+      {!loading && missions.length === 0 && (
         <p className="text-center text-muted">No missions found.</p>
-      ) : (
-        <p className="text-center text-muted">End of List</p>
+      )}
+
+      {!hasMore && missions.length > 0 && (
+        <p className="text-center text-muted">End of list.</p>
       )}
     </div>
   );
