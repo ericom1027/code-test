@@ -102,6 +102,16 @@ const missions = [
   },
   {
     id: 10,
+    name: "CRS-19",
+    status: "upcoming",
+    time: "6 hours ago",
+    description: "",
+    image:
+      "https://www.americaspace.com/wp-content/uploads/2019/07/CRS-18-patch.jpg",
+    video: "https://www.youtube.com/watch?v=SlgrxVuP5jk",
+  },
+  {
+    id: 11,
     name: "ANASIS-II",
     status: "upcoming",
     time: "8 hours ago",
@@ -111,7 +121,7 @@ const missions = [
     video: "https://via.placeholder.com/400x200?text=ANASIS-II+Video",
   },
   {
-    id: 11,
+    id: 12,
     name: "CCtCap Demo Mission 2",
     status: "upcoming",
     time: "12 hours ago",
